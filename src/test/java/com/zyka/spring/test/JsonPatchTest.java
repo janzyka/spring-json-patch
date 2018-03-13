@@ -1,6 +1,7 @@
 package com.zyka.spring.test;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,6 +19,8 @@ import org.springframework.data.rest.webmvc.support.RepositoryEntityLinks;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
@@ -37,7 +40,7 @@ public class JsonPatchTest {
     private RepositoryEntityLinks entityLinks;
 
     @Test
-    public void testJsonPatch() throws Exception {
+    public void patchEntityReferenceWithLink() throws Exception {
 
         Task task1 = taskRepository.save(new Task("task1", 1.5));
         Task task2 = taskRepository.save(new Task("task2", 2.5));
@@ -56,6 +59,35 @@ public class JsonPatchTest {
         operation = operationRepository.findOne(operation.getId());
 
         Assert.assertEquals(task2.getId(), operation.getTask().getId());
+    }
+
+    @Test
+    public void patchDateWithCustomDateFormat() throws Exception {
+
+        // Created new entity, custom date format is applied
+        MvcResult result = mockMvc.perform(
+                post(entityLinks.linkToCollectionResource(Task.class).getHref())
+                        .content("{" +
+                                    "\"name\": \"name\"," +
+                                    "\"effort\": 0," +
+                                    "\"someDate\": \"2018-01-01\"" +
+                                "}")
+                        .accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
+                        .contentType("application/json"))
+                .andDo(print())
+                .andExpect(
+                        status().isCreated())
+                .andReturn();
+
+        // Patch date, custom date format is ignored
+        mockMvc.perform(
+                patch(result.getResponse().getHeader("Location"))
+                        .content("[{ \"op\": \"replace\", \"path\": \"someDate\", \"value\" : \"2019-01-01\"}]")
+                        .accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
+                        .contentType("application/json-patch+json"))
+                .andDo(print())
+                .andExpect(
+                        status().isOk());
     }
 
 }

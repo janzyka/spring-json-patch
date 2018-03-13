@@ -1,5 +1,7 @@
 package com.zyka.spring.test.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.sql.Timestamp;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -30,6 +32,9 @@ public class Task {
 
     @NotNull
     private double effort;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Timestamp someDate;
 
     public Task(String name, double effort) {
         this.name = name;
